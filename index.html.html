@@ -49,37 +49,38 @@
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-      </a-assets>
+      </assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
-               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1000; easing: easeOutQuad"
+               animation__scale="property: scale; from: 0 0 0; to: 1 1 1; dur: 800; easing: easeOutBack"
+               animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target0">
         <a-entity id="soft-wrapper0">
-          <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+          <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating" scale="0 0 0"></a-image>
         </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1" id="target1">
         <a-entity id="soft-wrapper1">
-          <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+          <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating" scale="0 0 0"></a-image>
         </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2" id="target2">
         <a-entity id="soft-wrapper2">
-          <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+          <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating" scale="0 0 0"></a-image>
         </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3" id="target3">
         <a-entity id="soft-wrapper3">
-          <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+          <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating" scale="0 0 0"></a-image>
         </a-entity>
       </a-entity>
 
@@ -97,7 +98,7 @@
         }
       });
 
-      // LÓGICA DE SUAVIZADO INDEPENDIENTE
+      // LÓGICA DE SUAVIZADO INDEPENDIENTE (Sin cambios)
       const smoothingFactor = 0.05; 
       
       for (let i = 0; i < 4; i++) {
@@ -110,17 +111,14 @@
 
         target.addEventListener("targetFound", () => { 
           isFound = true; 
-          // Resetear posición al encontrar para evitar saltos desde el origen (0,0,0)
           currentPos.copy(target.object3D.position);
           currentQuat.copy(target.object3D.quaternion);
         });
         
         target.addEventListener("targetLost", () => { isFound = false; });
 
-        // Función de actualización por frame (tick) para máxima fluidez
         const updateSmoothing = () => {
           if (isFound) {
-            // Suavizamos el contenedor (wrapper), no la imagen directamente
             currentPos.lerp(target.object3D.position, smoothingFactor);
             currentQuat.slerp(target.object3D.quaternion, smoothingFactor);
 
