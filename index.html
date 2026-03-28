@@ -24,7 +24,6 @@
         pointer-events: none; 
       }
 
-      /* Botón Fullscreen */
       #btn-fullscreen {
         position: fixed; top: 20px; right: 20px;
         z-index: 20; width: 40px; height: 40px;
@@ -32,187 +31,70 @@
         border: 1px solid white; cursor: pointer;
         display: flex; justify-content: center; align-items: center; font-size: 20px;
       }
-
-      /* BOTÓN DE PLAY PARA VIDEO - CENTRADO ABAJO */
-      #btn-play {
-        position: fixed; bottom: 30px; left: 50%;
-        transform: translateX(-50%);
-        z-index: 30; width: 65px; height: 65px;
-        background: rgba(0, 255, 100, 0.5); border-radius: 50%;
-        border: 2px solid white; color: white; cursor: pointer;
-        font-size: 28px; display: flex; justify-content: center; align-items: center;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        transition: all 0.3s ease;
-      }
     </style>
-
-    <script>
-      // SHADER PARA QUITAR EL FONDO VERDE (CHROMA KEY)
-      AFRAME.registerShader('chromakey', {
-        schema: {
-          src: {type: 'map'},
-          color: {type: 'color', default: '0 1 0'} // Color verde a eliminar
-        },
-        init: function(data) {
-          this.textureLoader = new THREE.TextureLoader();
-          this.material = new THREE.MeshBasicMaterial({
-            map: data.src,
-            transparent: true,
-            side: THREE.DoubleSide
-          });
-          // Lógica de eliminación de color
-          this.material.onBeforeCompile = (shader) => {
-            shader.uniforms.chromaColor = { value: new THREE.Color(data.color) };
-            shader.fragmentShader = `
-              uniform vec3 chromaColor;
-              ${shader.fragmentShader}
-            `.replace(
-              `gl_FragColor = vec4( outgoingLight, diffuseColor.a );`,
-              `
-              float dist = distance(diffuseColor.rgb, chromaColor);
-              if (dist < 0.45) { discard; } // Ajuste de tolerancia
-              gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-              `
-            );
-          };
-        },
-        update: function(data) { this.material.map = data.src; }
-      });
-    </script>
   </head>
   <body>
 
     <div id="marco-app"></div>
     <button id="btn-fullscreen">⛶</button>
-    <button id="btn-play">▶</button>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.000001; filterBeta: 0.0001; uiScanning: no; uiLoading: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.00001; filterBeta: 0.0001; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights, antialias: true" 
       vr-mode-ui="enabled: false" 
       device-orientation-permission-ui="enabled: false">
       
       <a-assets>
+        <img id="img1" src="assets/imagen1.png">
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-        <video id="videoRA" src="assets/Video-Para-RA.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
-               scale="0 0 0"
-               geometry="primitive: plane; width: 1; height: 1"
+               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1000; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target0">
-        <a-entity id="content0">
-          <a-video id="video-entity" src="#videoRA" width="1" height="1.5" position="0 0 0.1" scale="0 0 0" material="shader: chromakey; color: 0 1 0; opacity: 0; transparent: true; alphaTest: 0.5"></a-video>
-        </a-entity>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-entity id="content1"><a-image src="#img2" mixin="superFloating"></a-image></a-entity></a-entity>
-      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-entity id="content2"><a-image src="#img3" mixin="superFloating"></a-image></a-entity></a-entity>
-      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-entity id="content3"><a-image src="#img4" mixin="superFloating"></a-image></a-entity></a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target0"><a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
 
     </a-scene>
 
     <script>
-      // Global state para el video y targets
-      let videoIsPlaying = false;
-      let targetIsFound = [false, false, false, false];
-
-      // Fullscreen logic
       const btnFull = document.getElementById('btn-fullscreen');
       btnFull.addEventListener('click', () => {
-        if (!document.fullscreenElement) { document.documentElement.requestFullscreen().catch(() => {}); btnFull.innerHTML = "❌"; }
-        else { document.exitFullscreen(); btnFull.innerHTML = "⛶"; }
-      });
-
-      // Video Play/Pause button logic
-      const video = document.getElementById('videoRA');
-      const btnPlayVideo = document.getElementById('btn-play');
-      const videoEntity = document.getElementById('video-entity'); // La entidad <a-video>
-
-      btnPlayVideo.addEventListener('click', () => {
-        if (video.paused) {
-          videoIsPlaying = true;
-          video.play();
-          btnPlayVideo.innerHTML = "⏸";
-          btnPlayVideo.style.background = "rgba(255, 50, 50, 0.5)";
-          // Si el objetivo ya está encontrado, hacemos aparecer el video flotando.
-          if (targetIsFound[0]) {
-            videoEntity.setAttribute('animation__popup', { property: 'scale', from: '0 0 0', to: '1 1 1', dur: 800, easing: 'easeOutElastic' });
-            videoEntity.setAttribute('animation__fadein', { property: 'material.opacity', from: 0, to: 1, dur: 500 });
-          }
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+          btnFull.innerHTML = "❌";
         } else {
-          videoIsPlaying = false;
-          video.pause();
-          btnPlayVideo.innerHTML = "▶";
-          btnPlayVideo.style.background = "rgba(0, 255, 100, 0.5)";
-          // Ocultamos la entidad del video, pero el contenedor content0 sigue rastreando.
-          videoEntity.removeAttribute('animation__popup');
-          videoEntity.removeAttribute('animation__fadein');
-          videoEntity.setAttribute('scale', '0 0 0');
-          videoEntity.setAttribute('material', 'opacity', 0);
+          document.exitFullscreen();
+          btnFull.innerHTML = "⛶";
         }
       });
 
-      // SUAVIZADO ELÁSTICO MEJORADO (Basado en tu código favorito, CERO TEMBLEQUE)
-      const smoothingFactor = 0.01; // Ultra-lento para máxima estabilidad
+      // SUAVIZADO ELÁSTICO MEJORADO (Basado en tu código favorito)
+      const smoothingFactor = 0.02; // Un poco más lento para mayor estabilidad
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
-        const content = document.querySelector(`#content${i}`); // El contenedor rastreado
-
+        const content = document.querySelector(`#content${i}`);
         let currentPos = new THREE.Vector3();
+        let isFound = false;
 
-        target.addEventListener("targetFound", () => { 
-          targetIsFound[i] = true; 
-          
-          if (i === 0) {
-            // Lógica específica del video: solo aparece flotando si está en Play.
-            if (videoIsPlaying) {
-              videoEntity.setAttribute('animation__popup', { property: 'scale', from: '0 0 0', to: '1 1 1', dur: 800, easing: 'easeOutElastic' });
-              videoEntity.setAttribute('animation__fadein', { property: 'material.opacity', from: 0, to: 1, dur: 500 });
-            }
-          } else {
-            // Lógica específica de imágenes normales (1, 2, 3)
-            const image = content.querySelector('a-image');
-            image.setAttribute('animation__popup', { property: 'scale', from: '0 0 0', to: '1 1 1', dur: 800, easing: 'easeOutElastic' });
-            image.setAttribute('animation__fadein', { property: 'material.opacity', from: 0, to: 1, dur: 500 });
-          }
-        });
+        target.addEventListener("targetFound", () => { isFound = true; });
+        target.addEventListener("targetLost", () => { isFound = false; });
 
-        target.addEventListener("targetLost", () => { 
-          targetIsFound[i] = false; 
-          
-          if (i === 0) {
-            // Ocultar entidad del video al perder el tracking.
-            videoEntity.removeAttribute('animation__popup');
-            videoEntity.removeAttribute('animation__fadein');
-            videoEntity.setAttribute('scale', '0 0 0');
-            videoEntity.setAttribute('material', 'opacity', 0);
-          } else {
-            // Ocultar entidad de imagen normal.
-            const image = content.querySelector('a-image');
-            image.removeAttribute('animation__popup');
-            image.removeAttribute('animation__fadein');
-            image.setAttribute('scale', '0 0 0');
-            image.setAttribute('material', 'opacity', 0);
-          }
-        });
-
-        // La función Lerp debe aplicarse al contenedor contentN, no a los elementos anidados.
         content.addEventListener('componentchanged', function (evt) {
-          // Solo procesamos si el objetivo específico está encontrado
-          if (!targetIsFound[i]) return;
+          if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
 
-          // Interpolación elástica suave de posición y rotación (CERO TEMBLEQUE)
+          // Interpolación suave de posición y rotación
           currentPos.lerp(target.object3D.position, smoothingFactor);
           content.object3D.position.copy(currentPos);
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
