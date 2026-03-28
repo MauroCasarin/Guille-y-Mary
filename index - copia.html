@@ -50,70 +50,19 @@
 
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
-               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1200; easing: easeOutQuad"
-               animation__materialize="property: material.color; from: #FFF; to: #F0F; dur: 800; easing: easeOutExpo"
+               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1000; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
-      <a-mixin id="spark" 
-               geometry="primitive: sphere; radius: 0.015"
-               material="color: #FFF; shader: flat; transparent: true; opacity: 0.6; emissive: #FFF"
-               animation__pulse="property: scale; from: 0.5 0.5 0.5; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-               animation__orbit="property: rotation; to: 0 360 0; dur: 10000; easing: linear; loop: true"></a-mixin>
-
-      <a-entity mindar-image-target="targetIndex: 0" id="target0">
-         <a-entity id="content0" position="0 0 0.05">
-           <a-image src="#img1" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 0 0">
-             <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
-             <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
-             <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
-             <a-entity mixin="spark" position="0 0.7 0.1"></a-entity>
-           </a-entity>
-         </a-entity>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 1" id="target1">
-         <a-entity id="content1" position="0 0 0.05">
-           <a-image src="#img2" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 120 0">
-             <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
-             <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
-             <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
-           </a-entity>
-         </a-entity>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 2" id="target2">
-         <a-entity id="content2" position="0 0 0.05">
-           <a-image src="#img3" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 240 0">
-             <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
-             <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
-             <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
-           </a-entity>
-         </a-entity>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 3" id="target3">
-         <a-entity id="content3" position="0 0 0.05">
-           <a-image src="#img4" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 0 180">
-             <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
-             <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
-             <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
-           </a-entity>
-         </a-entity>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target0"><a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
 
     </a-scene>
 
     <script>
-      // LÓGICA DE PANTALLA COMPLETA
+      // Botón pantalla completa (sin login)
       const btnFull = document.getElementById('btn-fullscreen');
       btnFull.addEventListener('click', () => {
         if (!document.fullscreenElement) {
@@ -125,18 +74,15 @@
         }
       });
 
-      // --- SCRIPT DE ESTABILIDAD ELÁSTICA ---
+      // Suavizado elástico (automático para todos)
       const smoothingFactor = 0.05; 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
-        
         let currentPos = new THREE.Vector3();
         let isFound = false;
-
         target.addEventListener("targetFound", () => { isFound = true; });
         target.addEventListener("targetLost", () => { isFound = false; });
-
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
