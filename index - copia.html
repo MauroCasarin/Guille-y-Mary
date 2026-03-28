@@ -10,7 +10,6 @@
       body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* MARCO CON AUTO-ESCALADO TOTAL (100% x 100%) Y SIN PARALAJE */
       #marco-app {
         position: fixed;
         top: 0; left: 0; 
@@ -19,7 +18,7 @@
         background-image: url('assets/canvas.png'); 
         background-position: center center; 
         background-repeat: no-repeat; 
-        background-size: 100% 100%; /* Estira el canvas para cubrir cualquier pantalla */
+        background-size: 100% 100%; 
         z-index: 10; 
         pointer-events: none; 
       }
@@ -60,10 +59,29 @@
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target0"><a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target0">
+        <a-entity id="soft-wrapper0">
+          <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+        </a-entity>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 1" id="target1">
+        <a-entity id="soft-wrapper1">
+          <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+        </a-entity>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 2" id="target2">
+        <a-entity id="soft-wrapper2">
+          <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+        </a-entity>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 3" id="target3">
+        <a-entity id="soft-wrapper3">
+          <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+        </a-entity>
+      </a-entity>
 
     </a-scene>
 
@@ -79,26 +97,40 @@
         }
       });
 
-      // SUAVIZADO ELÁSTICO MEJORADO (Basado en tu código favorito)
-      const smoothingFactor = 0.02; // Un poco más lento para mayor estabilidad
+      // LÓGICA DE SUAVIZADO INDEPENDIENTE
+      const smoothingFactor = 0.05; 
+      
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
-        const content = document.querySelector(`#content${i}`);
+        const wrapper = document.querySelector(`#soft-wrapper${i}`);
+        
         let currentPos = new THREE.Vector3();
+        let currentQuat = new THREE.Quaternion();
         let isFound = false;
 
-        target.addEventListener("targetFound", () => { isFound = true; });
+        target.addEventListener("targetFound", () => { 
+          isFound = true; 
+          // Resetear posición al encontrar para evitar saltos desde el origen (0,0,0)
+          currentPos.copy(target.object3D.position);
+          currentQuat.copy(target.object3D.quaternion);
+        });
+        
         target.addEventListener("targetLost", () => { isFound = false; });
 
-        content.addEventListener('componentchanged', function (evt) {
-          if (!isFound) return;
-          if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
+        // Función de actualización por frame (tick) para máxima fluidez
+        const updateSmoothing = () => {
+          if (isFound) {
+            // Suavizamos el contenedor (wrapper), no la imagen directamente
+            currentPos.lerp(target.object3D.position, smoothingFactor);
+            currentQuat.slerp(target.object3D.quaternion, smoothingFactor);
 
-          // Interpolación suave de posición y rotación
-          currentPos.lerp(target.object3D.position, smoothingFactor);
-          content.object3D.position.copy(currentPos);
-          content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
-        });
+            wrapper.object3D.position.copy(currentPos);
+            wrapper.object3D.quaternion.copy(currentQuat);
+          }
+          requestAnimationFrame(updateSmoothing);
+        };
+        
+        updateSmoothing();
       }
     </script>
   </body>
