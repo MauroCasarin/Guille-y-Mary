@@ -10,10 +10,11 @@
       body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* Estilo base para todas las capas del Canvas */
-      .canvas-layer {
+      /* MARCO ÚNICO AL 100% CON MARGEN PARA PARALLAX */
+      #marco-app {
         position: fixed;
-        top: -10%; left: -10%; width: 120%; height: 120%; /* Sobredimensionado para el parallax intenso */
+        /* Sobredimensionamos un poco (110%) para que al moverse no se vea el fondo */
+        top: -5%; left: -5%; width: 110%; height: 110%; 
         background-image: url('assets/canvas.png'); 
         background-position: center; 
         background-repeat: no-repeat; 
@@ -21,17 +22,13 @@
         z-index: 10; 
         pointer-events: none; 
         will-change: transform;
+        transition: transform 0.08s linear; /* Transición muy corta para que sea reactivo */
       }
-
-      /* Capas con diferentes desenfoques */
-      #canvas-back { opacity: 1; filter: none; z-index: 10; }
-      #canvas-mid { opacity: 0.6; filter: blur(3px); z-index: 11; }
-      #canvas-front { opacity: 0.3; filter: blur(6px); z-index: 12; }
 
       #btn-fullscreen {
         position: fixed; top: 20px; right: 20px;
-        z-index: 30; width: 45px; height: 45px;
-        background: rgba(255, 255, 255, 0.2); border-radius: 50%;
+        z-index: 20; width: 40px; height: 40px;
+        background: rgba(255, 255, 255, 0.3); border-radius: 50%;
         border: 1px solid white; cursor: pointer;
         display: flex; justify-content: center; align-items: center; font-size: 20px;
         color: white;
@@ -40,42 +37,36 @@
   </head>
   <body>
 
-    <div id="canvas-back" class="canvas-layer"></div>
-    <div id="canvas-mid" class="canvas-layer"></div>
-    <div id="canvas-front" class="canvas-layer"></div>
-
+    <div id="marco-app"></div>
     <button id="btn-fullscreen">⛶</button>
 
     <script>
-      const layerBack = document.getElementById('canvas-back');
-      const layerMid = document.getElementById('canvas-mid');
-      const layerFront = document.getElementById('canvas-front');
+      // --- PARALAJE OPTIMIZADO PARA MARCO ÚNICO ---
+      const marco = document.getElementById('marco-app');
       
       window.addEventListener('deviceorientation', (event) => {
+        // Gamma: inclinación lateral | Beta: inclinación frontal
         let x = event.gamma; 
         let y = event.beta; 
 
-        // Intensidad de movimiento para cada capa (Parallax)
-        // La de atrás se mueve poco, la de adelante mucho
-        let moveX_B = x * 0.4;  let moveY_B = (y - 45) * 0.4;
-        let moveX_M = x * 0.8;  let moveY_M = (y - 45) * 0.8;
-        let moveX_F = x * 1.5;  let moveY_F = (y - 45) * 1.5;
+        // Ajustamos la intensidad del movimiento (factor 0.7 para que se note bien)
+        let moveX = x * 0.7; 
+        let moveY = (y - 45) * 0.7; 
 
-        layerBack.style.transform = `translate(${moveX_B}px, ${moveY_B}px)`;
-        layerMid.style.transform = `translate(${moveX_M}px, ${moveY_M}px)`;
-        layerFront.style.transform = `translate(${moveX_F}px, ${moveY_F}px)`;
+        // Aplicamos el movimiento al marco
+        marco.style.transform = `translate(${moveX}px, ${moveY}px)`;
       }, true);
 
-      // Componente de chispas (reacción al acelerómetro)
+      // --- COMPONENTE DE CHISPAS REACTIVAS ---
       AFRAME.registerComponent('accelerometer-sparks', {
         init: function () {
           this.handleOrientation = this.handleOrientation.bind(this);
           window.addEventListener('deviceorientation', this.handleOrientation, true);
         },
         handleOrientation: function (event) {
-          const maxTilt = 20; 
-          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 4));
-          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 4));
+          const maxTilt = 15; 
+          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 5));
+          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 5));
           this.el.setAttribute('rotation', { x: -tiltX, y: tiltY, z: 0 });
         }
       });
@@ -100,7 +91,7 @@
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
                animation__fade="property: material.opacity; from: 0; to: 1; dur: 1200; easing: easeOutQuad"
-               animation__move="property: position; to: 0 0 0.3; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
+               animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-mixin id="spark" 
