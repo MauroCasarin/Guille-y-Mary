@@ -51,7 +51,6 @@
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
                scale="0 0 0"
-               animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
@@ -75,7 +74,6 @@
         }
       });
 
-      // Suavizado elástico (automático para todos)
       const smoothingFactor = 0.05; 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
@@ -85,21 +83,32 @@
 
         target.addEventListener("targetFound", () => { 
           isFound = true; 
-          // --- EFECTO POP-UP (ESCALADO ELÁSTICO) ---
-          // Animamos la escala de 0 a 1.2 (se pasa) y luego baja a 1 en 1 segundo.
+          
+          // Disparamos el Pop-Up (Escala + Opacidad)
           content.setAttribute('animation__popup', {
             property: 'scale',
             from: '0 0 0',
             to: '1 1 1',
-            dur: 1000,
-            easing: 'easeOutElastic' // Este 'easing' le da el rebote elástico.
+            dur: 800,
+            easing: 'easeOutElastic'
+          });
+          content.setAttribute('animation__fadein', {
+            property: 'material.opacity',
+            from: 0,
+            to: 1,
+            dur: 500,
+            easing: 'linear'
           });
         });
 
         target.addEventListener("targetLost", () => { 
           isFound = false; 
-          // Reseteamos la escala para que la próxima aparición vuelva a hacer Pop-Up.
+          
+          // CRUCIAL: Removemos las animaciones y reseteamos valores para que pueda re-escanear
+          content.removeAttribute('animation__popup');
+          content.removeAttribute('animation__fadein');
           content.setAttribute('scale', '0 0 0');
+          content.setAttribute('material', 'opacity', 0);
         });
 
         content.addEventListener('componentchanged', function (evt) {
