@@ -2,97 +2,45 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/MauroCasarin/Guille-y-Mary/refs/heads/main/favicon.ico">
+    
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
       body { margin: 0; overflow: hidden; background-color: #000; }
+      
+      /* Ocultar botones de la interfaz de A-Frame */
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
+      /* MARCO FIJO canvas.png */
       #marco-app {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
         background-image: url('assets/canvas.png'); 
-        background-position: center; background-repeat: no-repeat; background-size: cover;
-        z-index: 10; pointer-events: none; 
-      }
-
-      #video-container {
-        position: fixed; bottom: 80px; right: 20px;
-        width: 120px; height: 213px;
-        z-index: 15; display: none; pointer-events: none;
-      }
-
-      #btn-play {
-        position: fixed; bottom: 25px; right: 25px;
-        z-index: 20; width: 50px; height: 50px;
-        background: rgba(255, 255, 255, 0.8); border-radius: 50%;
-        border: 2px solid #4CAF50; font-size: 20px; cursor: pointer;
-        display: flex; justify-content: center; align-items: center;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        z-index: 10; 
+        pointer-events: none; 
       }
     </style>
   </head>
   <body>
 
     <div id="marco-app"></div>
-    <button id="btn-play">▶️</button>
 
-    <div id="video-container">
-      <a-scene embedded vr-mode-ui="enabled: false" renderer="alpha: true; colorManagement: true;">
-        <a-assets>
-          <video id="vid-asset" src="assets/Video-Para-RA.mp4" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        </a-assets>
-
-        <script>
-          AFRAME.registerShader('chromakey', {
-            schema: { 
-              src: {type: 'map'}, 
-              color: {default: {r: 0, g: 1, b: 0}, type: 'color'}, 
-              similarity: {default: 0.3}, 
-              smoothness: {default: 0.1} 
-            },
-            init: function (data) {
-              this.videoTexture = new THREE.VideoTexture(data.src);
-              this.videoTexture.minFilter = THREE.LinearFilter;
-              this.videoTexture.magFilter = THREE.LinearFilter;
-              this.material = new THREE.ShaderMaterial({
-                uniforms: { 
-                  tex: {value: this.videoTexture}, 
-                  color: {value: new THREE.Color(data.color)}, 
-                  similarity: {value: data.similarity}, 
-                  smoothness: {value: data.smoothness} 
-                },
-                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
-                fragmentShader: `
-                  uniform sampler2D tex; 
-                  uniform vec3 color; 
-                  uniform float similarity; 
-                  uniform float smoothness; 
-                  varying vec2 vUv; 
-                  void main() { 
-                    vec4 videoColor = texture2D(tex, vUv); 
-                    float dist = distance(videoColor.rgb, color); 
-                    float alpha = smoothstep(similarity, similarity + smoothness, dist); 
-                    gl_FragColor = vec4(videoColor.rgb, alpha); 
-                  }`,
-                transparent: true
-              });
-            },
-            tick: function() { this.videoTexture.needsUpdate = true; }
-          });
-        </script>
-
-          <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-          <a-plane material="shader: chromakey; src: #vid-asset" width="2" height="3.5" position="0 0 -2"></a-plane>
-      </a-scene>
-    </div>
-
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
-             renderer="alpha: true; colorManagement: true;" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
-             style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;">
+    <a-scene 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <img id="img1" src="assets/imagen1.png"><img id="img2" src="assets/imagen2.png">
-        <img id="img3" src="assets/imagen3.png"><img id="img4" src="assets/imagen4.png">
+        <img id="img1" src="assets/imagen1.png">
+        <img id="img2" src="assets/imagen2.png">
+        <img id="img3" src="assets/imagen3.png">
+        <img id="img4" src="assets/imagen4.png">
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -103,46 +51,48 @@
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target0"><a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target0">
+         <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 1" id="target1">
+         <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 2" id="target2">
+         <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 3" id="target3">
+         <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
     </a-scene>
 
     <script>
-      const video = document.querySelector("#vid-asset");
-      const videoCont = document.querySelector("#video-container");
-      const btnPlay = document.querySelector("#btn-play");
-
-      btnPlay.addEventListener("click", () => {
-        if (video.paused) {
-          // IMPORTANTE: Primero le quitamos el Muted para que suene al dar Play
-          video.muted = false;
-          video.play().then(() => {
-            videoCont.style.display = "block";
-            btnPlay.innerHTML = "⏸️";
-          }).catch(err => console.log("Error al reproducir:", err));
-        } else {
-          video.pause();
-          videoCont.style.display = "none";
-          btnPlay.innerHTML = "▶️";
-        }
-      });
-
-      // --- SUAVIZADO ELÁSTICO ---
+      // --- SCRIPT DE ESTABILIDAD ELÁSTICA (INTERPOLACIÓN) ---
+      // Controla que el seguimiento sea fluido y sin temblores
       const smoothingFactor = 0.05; 
+
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
+        
         let currentPos = new THREE.Vector3();
         let isFound = false;
+
         target.addEventListener("targetFound", () => { isFound = true; });
         target.addEventListener("targetLost", () => { isFound = false; });
+
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
+
+          // Suavizado de posición (Lerp)
           currentPos.lerp(target.object3D.position, smoothingFactor);
           content.object3D.position.copy(currentPos);
+          
+          // Suavizado de rotación (Slerp)
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
         });
       }
