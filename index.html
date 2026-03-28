@@ -47,18 +47,18 @@
           window.addEventListener('deviceorientation', this.handleOrientation, true);
         },
         handleOrientation: function (event) {
-          const maxTilt = 12; 
-          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 6));
-          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 6));
+          const maxTilt = 10; 
+          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 8));
+          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 8));
           this.el.setAttribute('rotation', { x: -tiltX, y: tiltY, z: 0 });
         }
       });
     </script>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.000001; filterBeta: 0.0001; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights" 
+      renderer="colorManagement: true, physicallyCorrectLights, antialias: true;" 
       vr-mode-ui="enabled: false" 
       device-orientation-permission-ui="enabled: false">
       
@@ -78,7 +78,7 @@
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-mixin id="spark" 
-               geometry="primitive: sphere; radius: 0.008"
+               geometry="primitive: sphere; radius: 0.007"
                material="color: #FFF; shader: flat; transparent: true; opacity: 0.5;"
                animation__pulse="property: material.opacity; from: 0.1; to: 0.6; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"></a-mixin>
 
@@ -137,10 +137,9 @@
         }
       });
 
-      // --- SCRIPT DE SUAVIZADO ELÁSTICO INTENSIFICADO ---
-      // Factor de suavizado muy bajo para un efecto viscoso y sin temblores.
-      // Cuanto más bajo el valor, más elástico y lento es el seguimiento.
-      const smoothingFactor = 0.02; 
+      // --- SUAVIZADO ELÁSTICO EXTREMO ---
+      // Factor de suavizado al mínimo funcional (0.01) para una estabilidad total.
+      const smoothingFactor = 0.01; 
 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
@@ -153,7 +152,6 @@
 
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
-          // Solo procesamos cambios en posición o rotación para aplicar el Lerp
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
 
           // Suavizado de posición (Lerp)
@@ -161,7 +159,6 @@
           content.object3D.position.copy(currentPos);
           
           // Suavizado de rotación (Slerp)
-          // La rotación también se interpola para que no haya saltos bruscos.
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
         });
       }
