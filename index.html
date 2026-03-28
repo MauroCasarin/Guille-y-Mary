@@ -10,18 +10,12 @@
       body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* MARCO CON AUTO-ESCALADO TOTAL (100% x 100%) Y SIN PARALAJE */
       #marco-app {
         position: fixed;
-        top: 0; left: 0; 
-        width: 100vw; 
-        height: 100vh; 
+        top: 0; left: 0; width: 100%; height: 100%;
         background-image: url('assets/canvas.png'); 
-        background-position: center center; 
-        background-repeat: no-repeat; 
-        background-size: 100% 100%; /* Estira el canvas para cubrir cualquier pantalla */
-        z-index: 10; 
-        pointer-events: none; 
+        background-position: center; background-repeat: no-repeat; background-size: cover;
+        z-index: 10; pointer-events: none; 
       }
 
       #btn-fullscreen {
@@ -39,9 +33,9 @@
     <button id="btn-fullscreen">⛶</button>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.00001; filterBeta: 0.0001; uiScanning: no; uiLoading: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights, antialias: true" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
       device-orientation-permission-ui="enabled: false">
       
@@ -56,7 +50,8 @@
 
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
-               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1000; easing: easeOutQuad"
+               scale="0 0 0"
+               animation__fade="property: material.opacity; from: 0; to: 1; dur: 800; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
@@ -68,6 +63,7 @@
     </a-scene>
 
     <script>
+      // Fullscreen
       const btnFull = document.getElementById('btn-fullscreen');
       btnFull.addEventListener('click', () => {
         if (!document.fullscreenElement) {
@@ -79,22 +75,36 @@
         }
       });
 
-      // SUAVIZADO ELÁSTICO MEJORADO (Basado en tu código favorito)
-      const smoothingFactor = 0.02; // Un poco más lento para mayor estabilidad
+      // Suavizado elástico (automático para todos)
+      const smoothingFactor = 0.05; 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
         let currentPos = new THREE.Vector3();
         let isFound = false;
 
-        target.addEventListener("targetFound", () => { isFound = true; });
-        target.addEventListener("targetLost", () => { isFound = false; });
+        target.addEventListener("targetFound", () => { 
+          isFound = true; 
+          // --- EFECTO POP-UP (ESCALADO ELÁSTICO) ---
+          // Animamos la escala de 0 a 1.2 (se pasa) y luego baja a 1 en 1 segundo.
+          content.setAttribute('animation__popup', {
+            property: 'scale',
+            from: '0 0 0',
+            to: '1 1 1',
+            dur: 1000,
+            easing: 'easeOutElastic' // Este 'easing' le da el rebote elástico.
+          });
+        });
+
+        target.addEventListener("targetLost", () => { 
+          isFound = false; 
+          // Reseteamos la escala para que la próxima aparición vuelva a hacer Pop-Up.
+          content.setAttribute('scale', '0 0 0');
+        });
 
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
-
-          // Interpolación suave de posición y rotación
           currentPos.lerp(target.object3D.position, smoothingFactor);
           content.object3D.position.copy(currentPos);
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
