@@ -7,15 +7,20 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; background-color: #000; }
+      body { margin: 0; overflow: hidden; background-color: #000; perspective: 1000px; /* Necesario para paralaje CSS */ }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
+      /* MARCO FIJO CON EFECTO PARALAJE CSS */
       #marco-app {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background-image: url('assets/canvas.png'); 
         background-position: center; background-repeat: no-repeat; background-size: cover;
         z-index: 10; pointer-events: none; 
+        
+        /* Efecto Paralaje Óptico */
+        transform: translateZ(-50px) scale(1.1); /* Lo aleja sutilmente y lo agranda un poco */
+        transform-style: preserve-3d;
       }
 
       #btn-fullscreen {
@@ -31,6 +36,32 @@
 
     <div id="marco-app"></div>
     <button id="btn-fullscreen">⛶</button>
+
+    <script>
+      AFRAME.registerComponent('accelerometer-sparks', {
+        init: function () {
+          this.handleOrientation = this.handleOrientation.bind(this);
+          window.addEventListener('deviceorientation', this.handleOrientation, true);
+        },
+        remove: function () {
+          window.removeEventListener('deviceorientation', this.handleOrientation, true);
+        },
+        handleOrientation: function (event) {
+          // Obtenemos los ángulos de inclinación (beta y gamma)
+          // Beta: Inclinación adelante/atrás (-180 a 180)
+          // Gamma: Inclinación izquierda/derecha (-90 a 90)
+          
+          // Suavizamos los datos y limitamos el rango de rotación de las chispas
+          // Queremos una reacción sutil, no que giren violentamente.
+          const maxTilt = 15; // Grados máximos de inclinación de las chispas
+          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 6));
+          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 6));
+
+          // Aplicamos la rotación inversa al grupo de chispas para simular inercia
+          this.el.setAttribute('rotation', { x: -tiltX, y: tiltY, z: 0 });
+        }
+      });
+    </script>
 
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
@@ -51,20 +82,18 @@
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
                animation__fade="property: material.opacity; from: 0; to: 1; dur: 1200; easing: easeOutQuad"
-               animation__materialize="property: material.color; from: #FFF; to: #F0F; dur: 800; easing: easeOutExpo"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-mixin id="spark" 
-               geometry="primitive: sphere; radius: 0.015"
-               material="color: #FFF; shader: flat; transparent: true; opacity: 0.6; emissive: #FFF"
-               animation__pulse="property: scale; from: 0.5 0.5 0.5; to: 1.2 1.2 1.2; dur: 1000; easing: easeInOutQuad; loop: true; dir: alternate"
-               animation__orbit="property: rotation; to: 0 360 0; dur: 10000; easing: linear; loop: true"></a-mixin>
+               geometry="primitive: sphere; radius: 0.01"
+               material="color: #FFF; shader: flat; transparent: true; opacity: 0.6;"
+               animation__pulse="property: material.opacity; from: 0.2; to: 0.7; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target0">
          <a-entity id="content0" position="0 0 0.05">
            <a-image src="#img1" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 0 0">
+           <a-entity accelerometer-sparks position="0 0 0">
              <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
              <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
              <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
@@ -77,11 +106,12 @@
       <a-entity mindar-image-target="targetIndex: 1" id="target1">
          <a-entity id="content1" position="0 0 0.05">
            <a-image src="#img2" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 120 0">
+           <a-entity accelerometer-sparks position="0 0 0">
              <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
              <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
              <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
              <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
+             <a-entity mixin="spark" position="0 0.7 0"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
@@ -89,11 +119,12 @@
       <a-entity mindar-image-target="targetIndex: 2" id="target2">
          <a-entity id="content2" position="0 0 0.05">
            <a-image src="#img3" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 240 0">
+           <a-entity accelerometer-sparks position="0 0 0">
              <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
              <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
              <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
              <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
+             <a-entity mixin="spark" position="0 0.7 0"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
@@ -101,11 +132,12 @@
       <a-entity mindar-image-target="targetIndex: 3" id="target3">
          <a-entity id="content3" position="0 0 0.05">
            <a-image src="#img4" width="1" height="1" mixin="superFloating"></a-image>
-           <a-entity rotation="0 0 180">
+           <a-entity accelerometer-sparks position="0 0 0">
              <a-entity mixin="spark" position="0.5 0.3 0"></a-entity>
              <a-entity mixin="spark" position="-0.4 -0.5 0.1"></a-entity>
              <a-entity mixin="spark" position="0.3 -0.6 -0.1"></a-entity>
              <a-entity mixin="spark" position="-0.6 0.2 0"></a-entity>
+             <a-entity mixin="spark" position="0 0.7 0"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
