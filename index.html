@@ -2,92 +2,60 @@
   <head>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/MauroCasarin/Guille-y-Mary/refs/heads/main/favicon.ico">
-    
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
-    <script src="https://unpkg.com/aframe-particle-system-component@1.0.x/dist/aframe-particle-system-component.min.js"></script>
-
-    <script>
-      // Script personalizado para asegurar que las partículas sigan al objetivo correctamente
-      AFRAME.registerComponent('ar-controller', {
-        init: function () {
-          this.el.addEventListener('targetFound', event => {
-            console.log("Target found");
-            // Podrías activar sonidos aquí si quisieras
-          });
-          this.el.addEventListener('targetLost', event => {
-            console.log("Target lost");
-          });
-        }
-      });
-    </script>
-
     <style>
       body { margin: 0; overflow: hidden; }
-      /* Estilo para la pantalla de carga opcional de MindAR */
-      .mindar-ui-loading { }
-      .mindar-ui-compatibility { }
+      /* Forzar que el video de la cámara se vea detrás de la escena */
+      #mindar-image-ui-scanning { display: none; }
     </style>
   </head>
   <body>
     
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.1; uiScanning: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.1; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false"
-      ar-controller>
+      device-orientation-permission-ui="enabled: false">
       
       <a-assets>
         <img id="img1" src="assets/imagen1.png">
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-        
-        <img id="star-texture" src="https://img.icons8.com/ios-filled/50/ffffff/star--v1.png">
       </a-assets>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-camera position="0 0 0" look-controls="enabled: false" cursor="fuse: false; rayOrigin: mouse;" raycaster="far: 10000; objects: .clickable"></a-camera>
 
       <a-mixin id="imageStyle" 
                material="transparent: true; alphaTest: 0.5; shader: flat"
-               animation__float="property: position; to: 0 0.05 0.15; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
+               animation__float="property: position; to: 0 0.05 0.15; dur: 1500; easing: easeInOutSine; loop: true; dir: alternate"
+               animation__glow="property: material.opacity; from: 0.8; to: 1; dur: 500; easing: linear; loop: true; dir: alternate"></a-mixin>
       
       <a-mixin id="shadowStyle"
-               geometry="primitive: circle; radius: 0.5"
+               geometry="primitive: plane; width: 0.8; height: 0.8"
                material="color: black; opacity: 0.3; transparent: true; shader: flat"
-               rotation="-90 0 0" position="0 -0.2 0"></a-mixin>
-
-      <a-mixin id="particleStyle"
-               particle-system="preset: default; texture: #star-texture; color: #FFE082, #FFFFFF; size: 0.05; velocityValue: 0 0.2 0; velocitySpread: 0.2 0.1 0.2; accelerationValue: 0 -0.1 0; particleCount: 50; lifetime: 2; blending: additive; rotationAngle: 3.14"></a-mixin>
-
+               rotation="-90 0 0" position="0 -0.1 0"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0">
-        <a-entity mixin="shadowStyle"></a-entity>
-        
-        <a-image src="#img1" class="clickable" position="0 0 0.1" width="1" height="1" mixin="imageStyle"></a-image>
-        
-        <a-entity position="0 0 0.1" mixin="particleStyle"></a-entity>
+        <a-plane mixin="shadowStyle"></a-plane>
+        <a-image src="#img1" position="0 0 0.1" width="1" height="1" mixin="imageStyle"></a-image>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1">
-        <a-entity mixin="shadowStyle"></a-entity>
+        <a-plane mixin="shadowStyle"></a-plane>
         <a-image src="#img2" position="0 0 0.1" width="1" height="1" mixin="imageStyle"></a-image>
-        <a-entity position="0 0 0.1" mixin="particleStyle"></a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2">
-        <a-entity mixin="shadowStyle"></a-entity>
+        <a-plane mixin="shadowStyle"></a-plane>
         <a-image src="#img3" position="0 0 0.1" width="1" height="1" mixin="imageStyle"></a-image>
-        <a-entity position="0 0 0.1" mixin="particleStyle"></a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
-        <a-entity mixin="shadowStyle"></a-entity>
+        <a-plane mixin="shadowStyle"></a-plane>
         <a-image src="#img4" position="0 0 0.1" width="1" height="1" mixin="imageStyle"></a-image>
-        <a-entity position="0 0 0.1" mixin="particleStyle"></a-entity>
       </a-entity>
 
     </a-scene>
