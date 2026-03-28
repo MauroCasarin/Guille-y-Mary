@@ -26,7 +26,6 @@
         display: flex; justify-content: center; align-items: center; font-size: 20px;
       }
 
-      /* BOTÓN DE PLAY PARA VIDEO */
       #btn-play {
         position: fixed; bottom: 30px; left: 50%;
         transform: translateX(-50%);
@@ -34,37 +33,20 @@
         background: rgba(0, 255, 100, 0.5); border-radius: 50%;
         border: 2px solid white; color: white; cursor: pointer;
         font-size: 28px; display: flex; justify-content: center; align-items: center;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        transition: all 0.3s ease;
       }
     </style>
 
     <script>
-      // SHADER PARA QUITAR EL FONDO VERDE (CHROMA KEY)
+      // SHADER CHROMA KEY (QUITAR VERDE)
       AFRAME.registerShader('chromakey', {
-        schema: {
-          src: {type: 'map'},
-          color: {type: 'color', default: '0 1 0'}
-        },
+        schema: { src: {type: 'map'}, color: {type: 'color', default: '0 1 0'} },
         init: function(data) {
-          this.textureLoader = new THREE.TextureLoader();
-          this.material = new THREE.MeshBasicMaterial({
-            map: data.src,
-            transparent: true,
-            side: THREE.DoubleSide
-          });
+          this.material = new THREE.MeshBasicMaterial({ map: data.src, transparent: true, side: THREE.DoubleSide });
           this.material.onBeforeCompile = (shader) => {
             shader.uniforms.chromaColor = { value: new THREE.Color(data.color) };
-            shader.fragmentShader = `
-              uniform vec3 chromaColor;
-              ${shader.fragmentShader}
-            `.replace(
+            shader.fragmentShader = `uniform vec3 chromaColor; ${shader.fragmentShader}`.replace(
               `gl_FragColor = vec4( outgoingLight, diffuseColor.a );`,
-              `
-              float dist = distance(diffuseColor.rgb, chromaColor);
-              if (dist < 0.45) { discard; } 
-              gl_FragColor = vec4( outgoingLight, diffuseColor.a );
-              `
+              `float dist = distance(diffuseColor.rgb, chromaColor); if (dist < 0.45) { discard; } gl_FragColor = vec4( outgoingLight, diffuseColor.a );`
             );
           };
         },
@@ -79,18 +61,17 @@
     <button id="btn-play">▶</button>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.000001; filterBeta: 0.0001; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
       device-orientation-permission-ui="enabled: false">
       
       <a-assets>
-        <img id="img1" src="assets/imagen1.png">
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-        <video id="videoRA" src="assets/Video-Para-RA.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline></video>
+        <video id="videoRA" src="assets/Video-Para-RA.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
@@ -102,47 +83,41 @@
                animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target0">
-        <a-entity id="content0">
-          <a-video src="#videoRA" width="1" height="1.5" position="0 0 0.1" material="shader: chromakey; color: 0 1 0" scale="0 0 0"></a-video>
-        </a-entity>
+        <a-video id="content0" src="#videoRA" width="1" height="1.5" position="0 0 0.1" scale="0 0 0" material="shader: chromakey; color: 0 1 0; opacity: 0; transparent: true"></a-video>
       </a-entity>
 
-      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
-      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" id="target1">
+        <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 2" id="target2">
+        <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
+
+      <a-entity mindar-image-target="targetIndex: 3" id="target3">
+        <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
+      </a-entity>
 
     </a-scene>
 
     <script>
-      // Lógica Fullscreen
+      // Fullscreen
       const btnFull = document.getElementById('btn-fullscreen');
       btnFull.addEventListener('click', () => {
-        if (!document.fullscreenElement) {
-          document.documentElement.requestFullscreen().catch(() => {});
-          btnFull.innerHTML = "❌";
-        } else {
-          document.exitFullscreen();
-          btnFull.innerHTML = "⛶";
-        }
+        if (!document.fullscreenElement) { document.documentElement.requestFullscreen(); btnFull.innerHTML = "❌"; }
+        else { document.exitFullscreen(); btnFull.innerHTML = "⛶"; }
       });
 
-      // Lógica Reproducción Video
+      // Video Play/Pause
       const video = document.getElementById('videoRA');
       const btnPlay = document.getElementById('btn-play');
       btnPlay.addEventListener('click', () => {
-        if (video.paused) {
-          video.play();
-          btnPlay.innerHTML = "⏸";
-          btnPlay.style.background = "rgba(255, 50, 50, 0.5)";
-        } else {
-          video.pause();
-          btnPlay.innerHTML = "▶";
-          btnPlay.style.background = "rgba(0, 255, 100, 0.5)";
-        }
+        if (video.paused) { video.play(); btnPlay.innerHTML = "⏸"; btnPlay.style.background = "rgba(255, 50, 50, 0.5)"; }
+        else { video.pause(); btnPlay.innerHTML = "▶"; btnPlay.style.background = "rgba(0, 255, 100, 0.5)"; }
       });
 
-      // Seguimiento y Pop-Up
-      const smoothingFactor = 0.05; 
+      // LÓGICA DE SEGUIMIENTO Y POP-UP (Misma estabilidad que antes)
+      const smoothingFactor = 0.01; 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
@@ -151,22 +126,16 @@
 
         target.addEventListener("targetFound", () => { 
           isFound = true; 
-          content.setAttribute('animation__popup', {
-            property: 'scale', from: '0 0 0', to: '1 1 1', dur: 800, easing: 'easeOutElastic'
-          });
-          // Si el contenido tiene material (como las imágenes), animamos opacidad
-          const elConMaterial = content.querySelector('a-image') || content.querySelector('a-video');
-          if(elConMaterial) {
-            elConMaterial.setAttribute('animation__fadein', {
-              property: 'material.opacity', from: 0, to: 1, dur: 500
-            });
-          }
+          content.setAttribute('animation__popup', { property: 'scale', from: '0 0 0', to: '1 1 1', dur: 800, easing: 'easeOutElastic' });
+          content.setAttribute('animation__fadein', { property: 'material.opacity', from: 0, to: 1, dur: 500 });
         });
 
         target.addEventListener("targetLost", () => { 
           isFound = false; 
           content.removeAttribute('animation__popup');
+          content.removeAttribute('animation__fadein');
           content.setAttribute('scale', '0 0 0');
+          content.setAttribute('material', 'opacity', 0);
         });
 
         content.addEventListener('componentchanged', function (evt) {
