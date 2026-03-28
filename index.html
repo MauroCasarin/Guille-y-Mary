@@ -7,73 +7,87 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; background-color: black; }
+      body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* CAPA 1: El Video de Fondo (Chroma Key) */
-      #video-container {
-        position: fixed;
-        top: 0; left: 0; width: 100%; height: 100%;
-        z-index: 1;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        overflow: hidden;
-      }
-      
-      #video-fondo {
-        min-width: 100%;
-        min-height: 100%;
-        object-fit: cover;
-        /* Filtro básico para ayudar a disimular el verde si no usas shader complejo */
-        filter: contrast(1.1) brightness(1.1);
-      }
-
-      /* CAPA 2: El Marco canvas.png */
+      /* MARCO PRINCIPAL */
       #marco-app {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
         background-image: url('assets/canvas.png'); 
-        background-position: center;
-        background-repeat: no-repeat;
-        background-size: cover;
-        z-index: 10; 
-        pointer-events: none; 
+        background-position: center; background-repeat: no-repeat; background-size: cover;
+        z-index: 10; pointer-events: none; 
+      }
+
+      /* CONTENEDOR DEL VIDEO EN LA ESQUINA */
+      #video-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 120px; /* Tamaño pequeño */
+        height: 213px; /* Proporción 1080x1920 */
+        z-index: 15;
+        display: none; /* Oculto hasta dar Play */
+        pointer-events: none;
       }
 
       /* BOTÓN PLAY MINI */
       #btn-play {
         position: fixed;
-        bottom: 30px;
-        right: 30px;
+        bottom: 25px;
+        right: 25px;
         z-index: 20;
-        width: 60px;
-        height: 60px;
-        background: rgba(255, 255, 255, 0.8);
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.6);
         border-radius: 50%;
         border: none;
-        font-size: 24px;
+        font-size: 18px;
         cursor: pointer;
-        box-shadow: 0 0 15px rgba(0,0,0,0.5);
         display: flex;
         justify-content: center;
         align-items: center;
+        transition: all 0.3s;
       }
     </style>
   </head>
   <body>
 
-    <div id="video-container">
-        <video id="video-fondo" src="assets/Video-Para-RA.mp4" loop playsinline webkit-playsinline></video>
-    </div>
-
     <div id="marco-app"></div>
-
     <button id="btn-play">▶️</button>
+
+    <div id="video-container">
+      <a-scene 
+        embedded 
+        vr-mode-ui="enabled: false" 
+        renderer="alpha: true"
+        style="width: 100%; height: 100%;">
+        
+        <a-assets>
+          <video id="vid-asset" src="assets/Video-Para-RA.mp4" loop playsinline webkit-playsinline></video>
+        </a-assets>
+
+        <script>
+          AFRAME.registerShader('chromakey', {
+            schema: { src: {type: 'map'}, color: {default: {r: 0, g: 1, b: 0}, type: 'color'}, similarity: {default: 0.3}, smoothness: {default: 0.1} },
+            init: function (data) {
+              this.videoTexture = new THREE.VideoTexture(data.src);
+              this.material = new THREE.ShaderMaterial({
+                uniforms: { tex: {value: this.videoTexture}, color: {value: new THREE.Color(data.color)}, similarity: {value: data.similarity}, smoothness: {value: data.smoothness} },
+                vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+                fragmentShader: `uniform sampler2D tex; uniform vec3 color; uniform float similarity; uniform float smoothness; varying vec2 vUv; void main() { vec4 videoColor = texture2D(tex, vUv); float dist = distance(videoColor.rgb, color); float alpha = smoothstep(similarity, similarity + smoothness, dist); gl_FragColor = vec4(videoColor.rgb, alpha); }`,
+                transparent: true
+              });
+            }
+          });
+        </script>
+
+        <a-plane material="shader: chromakey; src: #vid-asset; color: 0 1 0" width="2" height="3.5" position="0 0 -2"></a-plane>
+      </a-scene>
+    </div>
 
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
-      embedded
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights, alpha: true" 
       vr-mode-ui="enabled: false" 
@@ -95,36 +109,31 @@
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -10 -10 -5; to: 10 10 5; dur: 4000; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
-      <a-entity mindar-image-target="targetIndex: 0" id="target0">
-         <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 1" id="target1">
-         <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 2" id="target2">
-         <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
-      </a-entity>
-
-      <a-entity mindar-image-target="targetIndex: 3" id="target3">
-         <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
-      </a-entity>
+      <a-entity mindar-image-target="targetIndex: 0" id="target0"><a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 1" id="target1"><a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 2" id="target2"><a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
+      <a-entity mindar-image-target="targetIndex: 3" id="target3"><a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image></a-entity>
 
     </a-scene>
 
     <script>
-      const videoFondo = document.querySelector("#video-fondo");
+      const video = document.querySelector("#vid-asset");
+      const videoCont = document.querySelector("#video-container");
       const btnPlay = document.querySelector("#btn-play");
 
-      // Lógica del botón Play
       btnPlay.addEventListener("click", () => {
-        if (videoFondo.paused) {
-          videoFondo.play();
+        if (video.paused) {
+          video.play();
+          videoCont.style.display = "block";
           btnPlay.innerHTML = "⏸️";
+          btnPlay.style.bottom = "240px"; // Sube el botón para que no tape el video
+          btnPlay.style.opacity = "0.4"; // Se vuelve más discreto
         } else {
-          videoFondo.pause();
+          video.pause();
+          videoCont.style.display = "none";
           btnPlay.innerHTML = "▶️";
+          btnPlay.style.bottom = "25px";
+          btnPlay.style.opacity = "1";
         }
       });
 
@@ -135,10 +144,8 @@
         const content = document.querySelector(`#content${i}`);
         let currentPos = new THREE.Vector3();
         let isFound = false;
-
         target.addEventListener("targetFound", () => { isFound = true; });
         target.addEventListener("targetLost", () => { isFound = false; });
-
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
