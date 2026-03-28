@@ -7,9 +7,29 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; }
+      body { margin: 0; overflow: hidden; background-color: black; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
+      /* CAPA 1: El Video de Fondo (Chroma Key) */
+      #video-container {
+        position: fixed;
+        top: 0; left: 0; width: 100%; height: 100%;
+        z-index: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        overflow: hidden;
+      }
+      
+      #video-fondo {
+        min-width: 100%;
+        min-height: 100%;
+        object-fit: cover;
+        /* Filtro básico para ayudar a disimular el verde si no usas shader complejo */
+        filter: contrast(1.1) brightness(1.1);
+      }
+
+      /* CAPA 2: El Marco canvas.png */
       #marco-app {
         position: fixed;
         top: 0; left: 0; width: 100%; height: 100%;
@@ -20,168 +40,113 @@
         z-index: 10; 
         pointer-events: none; 
       }
-      
-      /* Botón obligatorio para activar sonido/video en celulares */
-      #boton-inicio {
-        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        z-index: 20; padding: 15px 30px; background-color: #4CAF50; color: white;
-        border-radius: 25px; border: none; font-family: sans-serif; font-weight: bold;
-        cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+
+      /* BOTÓN PLAY MINI */
+      #btn-play {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        z-index: 20;
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 50%;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
       }
     </style>
   </head>
   <body>
 
-    <div id="marco-app"></div>
-    <button id="boton-inicio">👉 Toca para Activar RA</button>
+    <div id="video-container">
+        <video id="video-fondo" src="assets/Video-Para-RA.mp4" loop playsinline webkit-playsinline></video>
+    </div>
 
-    <script>
-      AFRAME.registerShader('chromakey', {
-        schema: {
-          src: {type: 'map'},
-          color: {default: {r: 0.0, g: 1.0, b: 0.0}, type: 'color'}, // El color verde a eliminar
-          similarity: {default: 0.3, type: 'number'}, // Qué tan exacto debe ser el color
-          smoothness: {default: 0.1, type: 'number'}  // Suavizado de bordes
-        },
-        init: function (data) {
-          const videoTexture = new THREE.VideoTexture(data.src);
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture.magFilter = THREE.LinearFilter;
-          videoTexture.format = THREE.RGBFormat;
-          this.material = new THREE.ShaderMaterial({
-            uniforms: {
-              tex: {value: videoTexture},
-              color: {value: new THREE.Color(data.color)},
-              similarity: {value: data.similarity},
-              smoothness: {value: data.smoothness}
-            },
-            vertexShader: [
-              'varying vec2 vUv;',
-              'void main() {',
-              'vUv = uv;',
-              'gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);',
-              '}'
-            ].join('\n'),
-            fragmentShader: [
-              'uniform sampler2D tex;',
-              'uniform vec3 color;',
-              'uniform float similarity;',
-              'uniform float smoothness;',
-              'varying vec2 vUv;',
-              'void main() {',
-              'vec4 videoColor = texture2D(tex, vUv);',
-              'float dist = distance(videoColor.rgb, color);',
-              'float alpha = smoothstep(similarity, similarity + smoothness, dist);',
-              'gl_FragColor = vec4(videoColor.rgb, alpha);',
-              '}'
-            ].join('\n'),
-            transparent: true
-          });
-        },
-        update: function (data) {
-          this.material.uniforms.color.value.set(data.color);
-          this.material.uniforms.similarity.value = data.similarity;
-          this.material.uniforms.smoothness.value = data.smoothness;
-        }
-      });
-    </script>
+    <div id="marco-app"></div>
+
+    <button id="btn-play">▶️</button>
 
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
+      embedded
       color-space="sRGB" 
-      renderer="colorManagement: true, physicallyCorrectLights" 
+      renderer="colorManagement: true, physicallyCorrectLights, alpha: true" 
       vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
+      device-orientation-permission-ui="enabled: false"
+      style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 5;">
       
       <a-assets>
+        <img id="img1" src="assets/imagen1.png">
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-        
-        <video id="webcam-video" src="assets/Video-Para-RA.mp4" preload="auto" loop="true" playsinline webkit-playsinline></video>
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
       <a-mixin id="superFloating" 
+               material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
+               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1000; easing: easeOutQuad"
                animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
                animation__tilt="property: rotation; from: -10 -10 -5; to: 10 10 5; dur: 4000; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target0">
-         <a-plane 
-           id="video-screen"
-           material="shader: chromakey; src: #webcam-video; color: 0 1 0; similarity: 0.3; smoothness: 0.1" 
-           position="0 0 0.05" 
-           width="1" 
-           height="1.77" 
-           mixin="superFloating"></a-plane>
+         <a-image id="content0" src="#img1" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1" id="target1">
-         <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating" material="transparent: true; alphaTest: 0.5; shader: flat"></a-image>
+         <a-image id="content1" src="#img2" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2" id="target2">
-         <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating" material="transparent: true; alphaTest: 0.5; shader: flat"></a-image>
+         <a-image id="content2" src="#img3" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3" id="target3">
-         <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating" material="transparent: true; alphaTest: 0.5; shader: flat"></a-image>
+         <a-image id="content3" src="#img4" position="0 0 0.05" width="1" height="1" mixin="superFloating"></a-image>
       </a-entity>
 
     </a-scene>
 
     <script>
-      const video = document.querySelector("#webcam-video");
-      const btn = document.querySelector("#boton-inicio");
-      const target0 = document.querySelector("#target0");
+      const videoFondo = document.querySelector("#video-fondo");
+      const btnPlay = document.querySelector("#btn-play");
 
-      // El usuario debe interactuar para desbloquear el video y sonido
-      btn.addEventListener("click", () => {
-        video.play();
-        video.pause(); // Pre-carga
-        btn.style.display = "none";
+      // Lógica del botón Play
+      btnPlay.addEventListener("click", () => {
+        if (videoFondo.paused) {
+          videoFondo.play();
+          btnPlay.innerHTML = "⏸️";
+        } else {
+          videoFondo.pause();
+          btnPlay.innerHTML = "▶️";
+        }
       });
 
-      // Reproducir/Pausar según si el marcador es visible
-      target0.addEventListener("targetFound", () => {
-        video.play();
-      });
-      target0.addEventListener("targetLost", () => {
-        video.pause();
-      });
-
-      // --- SCRIPT DE ESTABILIDAD ELÁSTICA (SUAVIZADO MANUAL) ---
-      // Se aplica a los contenidos de imagen y video
+      // --- SUAVIZADO ELÁSTICO ---
       const smoothingFactor = 0.05; 
-      const smoothingTargetIds = ['video-screen', 'content1', 'content2', 'content3'];
-      const targetIds = ['target0', 'target1', 'target2', 'target3'];
-
-      smoothingTargetIds.forEach((contentId, index) => {
-        const content = document.querySelector(`#${contentId}`);
-        const target = document.querySelector(`#${targetIds[index]}`);
-        
+      for (let i = 0; i < 4; i++) {
+        const target = document.querySelector(`#target${i}`);
+        const content = document.querySelector(`#content${i}`);
         let currentPos = new THREE.Vector3();
         let isFound = false;
 
         target.addEventListener("targetFound", () => { isFound = true; });
         target.addEventListener("targetLost", () => { isFound = false; });
 
-        // Escuchamos cambios para interceptar y suavizar
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
-
-          const targetPos = target.object3D.position;
-          
-          // Suavizado de posición con LERP
-          currentPos.lerp(targetPos, smoothingFactor);
+          currentPos.lerp(target.object3D.position, smoothingFactor);
           content.object3D.position.copy(currentPos);
-          
-          // Suavizado de rotación con SLERP (más firme que Lerp para rotaciones)
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
         });
-      });
+      }
     </script>
   </body>
 </html>
