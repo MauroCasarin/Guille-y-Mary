@@ -19,7 +19,6 @@
         background-image: url('assets/canvas.png'); 
         background-position: center center; 
         background-repeat: no-repeat; 
-        /* '100% 100%' obliga a la imagen a estirarse para cubrir ancho y alto exactos */
         background-size: 100% 100%; 
         z-index: 10; 
         pointer-events: none; 
@@ -138,20 +137,31 @@
         }
       });
 
-      // Suavizado elástico (Lerp) para evitar temblores
-      const smoothingFactor = 0.05; 
+      // --- SCRIPT DE SUAVIZADO ELÁSTICO INTENSIFICADO ---
+      // Factor de suavizado muy bajo para un efecto viscoso y sin temblores.
+      // Cuanto más bajo el valor, más elástico y lento es el seguimiento.
+      const smoothingFactor = 0.02; 
+
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
         let currentPos = new THREE.Vector3();
         let isFound = false;
+
         target.addEventListener("targetFound", () => { isFound = true; });
         target.addEventListener("targetLost", () => { isFound = false; });
+
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
+          // Solo procesamos cambios en posición o rotación para aplicar el Lerp
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
+
+          // Suavizado de posición (Lerp)
           currentPos.lerp(target.object3D.position, smoothingFactor);
           content.object3D.position.copy(currentPos);
+          
+          // Suavizado de rotación (Slerp)
+          // La rotación también se interpola para que no haya saltos bruscos.
           content.object3D.quaternion.slerp(target.object3D.quaternion, smoothingFactor);
         });
       }
