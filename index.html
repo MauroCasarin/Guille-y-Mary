@@ -10,7 +10,7 @@
       body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* MARCO CON AUTO-ESCALADO FORZADO (STRETCH) */
+      /* MARCO CON AUTO-ESCALADO FORZADO (STRETCH) - FIJO Y ESTABLE */
       #marco-app {
         position: fixed;
         top: 0; left: 0; 
@@ -73,9 +73,10 @@
 
       <a-mixin id="superFloating" 
                material="transparent: true; alphaTest: 0.5; shader: flat; opacity: 0"
-               animation__fade="property: material.opacity; from: 0; to: 1; dur: 1200; easing: easeOutQuad"
-               animation__move="property: position; to: 0 0 0.25; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate"
-               animation__tilt="property: rotation; from: -8 -8 -4; to: 8 8 4; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
+               geometry="primitive: plane; width: 1; height: 1"
+               position="0 0 0"
+               animation__move="property: position; to: 0 0 0.15; dur: 3000; easing: easeInOutSine; loop: true; dir: alternate; startEvents: fade-in-complete"
+               animation__tilt="property: rotation; from: -6 -6 -3; to: 6 6 3; dur: 4500; easing: easeInOutSine; loop: true; dir: alternate; startEvents: fade-in-complete"></a-mixin>
 
       <a-mixin id="spark" 
                geometry="primitive: sphere; radius: 0.007"
@@ -83,41 +84,41 @@
                animation__pulse="property: material.opacity; from: 0.1; to: 0.6; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0" id="target0">
-         <a-entity id="content0" position="0 0 0.05">
-           <a-image src="#img1" width="1" height="1" mixin="superFloating"></a-image>
+         <a-entity id="content0">
+           <a-image src="#img1" mixin="superFloating"></a-image>
            <a-entity accelerometer-sparks>
-             <a-entity mixin="spark" position="0.4 0.4 0"></a-entity>
-             <a-entity mixin="spark" position="-0.4 -0.4 0.1"></a-entity>
+             <a-entity mixin="spark" position="0.4 0.4 0.02"></a-entity>
+             <a-entity mixin="spark" position="-0.4 -0.4 0.08"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 1" id="target1">
-         <a-entity id="content1" position="0 0 0.05">
-           <a-image src="#img2" width="1" height="1" mixin="superFloating"></a-image>
+         <a-entity id="content1">
+           <a-image src="#img2" mixin="superFloating"></a-image>
            <a-entity accelerometer-sparks>
-             <a-entity mixin="spark" position="0.4 0.4 0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.3 -0.5 0"></a-entity>
+             <a-entity mixin="spark" position="0.4 0.4 0.08"></a-entity>
+             <a-entity mixin="spark" position="-0.3 -0.5 0.02"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 2" id="target2">
-         <a-entity id="content2" position="0 0 0.05">
-           <a-image src="#img3" width="1" height="1" mixin="superFloating"></a-image>
+         <a-entity id="content2">
+           <a-image src="#img3" mixin="superFloating"></a-image>
            <a-entity accelerometer-sparks>
-             <a-entity mixin="spark" position="0.5 0 0.1"></a-entity>
-             <a-entity mixin="spark" position="-0.5 0 0"></a-entity>
+             <a-entity mixin="spark" position="0.5 0 0.08"></a-entity>
+             <a-entity mixin="spark" position="-0.5 0 0.02"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3" id="target3">
-         <a-entity id="content3" position="0 0 0.05">
-           <a-image src="#img4" width="1" height="1" mixin="superFloating"></a-image>
+         <a-entity id="content3">
+           <a-image src="#img4" mixin="superFloating"></a-image>
            <a-entity accelerometer-sparks>
-             <a-entity mixin="spark" position="0 0.6 0"></a-entity>
-             <a-entity mixin="spark" position="0 -0.6 0.1"></a-entity>
+             <a-entity mixin="spark" position="0 0.6 0.02"></a-entity>
+             <a-entity mixin="spark" position="0 -0.6 0.08"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
@@ -137,19 +138,56 @@
         }
       });
 
-      // --- SUAVIZADO ELÁSTICO EXTREMO ---
-      // Factor de suavizado al mínimo funcional (0.01) para una estabilidad total.
-      const smoothingFactor = 0.01; 
+      // --- SCRIPT DE ESTABILIDAD EXTREMA + FADE SUAVE (RECOMENDACIÓN) ---
+      const smoothingFactor = 0.01; // Mantenemos el suavizado elástico al mínimo (estabilidad total)
 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
         const content = document.querySelector(`#content${i}`);
+        const image = content.querySelector('a-image');
+        
         let currentPos = new THREE.Vector3();
         let isFound = false;
 
-        target.addEventListener("targetFound", () => { isFound = true; });
-        target.addEventListener("targetLost", () => { isFound = false; });
+        // --- LÓGICA DE FADE IN/OUT (RECOMENDACIÓN) ---
+        
+        // Al encontrar el marcador: Elevación + Fade In suave
+        target.addEventListener("targetFound", () => { 
+          isFound = true; 
+          // Anima Opacidad (0 a 1) y Posición Z (0 a 0.1)
+          image.setAttribute('animation__fadeIn', {
+            property: 'material.opacity', from: 0, to: 1, dur: 1000, easing: 'easeOutQuad'
+          });
+          image.setAttribute('animation__elevateIn', {
+            property: 'position.z', from: 0, to: 0.1, dur: 1000, easing: 'easeOutQuad'
+          });
+          // Avisa a las otras animaciones (balanceo) que comiencen
+          image.addEventListener('animationcomplete__fadeIn', () => {
+            image.dispatchEvent(new Event('fade-in-complete'));
+          }, {once: true});
+        });
 
+        // Al perder el marcador: Hundimiento + Fade Out suave (Elimina la brusquedad)
+        target.addEventListener("targetLost", () => { 
+          isFound = false; 
+          // Anima Opacidad (1 a 0) y Posición Z (0.1 a 0)
+          image.setAttribute('animation__fadeOut', {
+            property: 'material.opacity', from: 1, to: 0, dur: 800, easing: 'easeInQuad'
+          });
+          image.setAttribute('animation__elevateOut', {
+            property: 'position.z', from: 0.1, to: 0, dur: 800, easing: 'easeInQuad'
+          });
+          
+          // CRUCIAL: Forzamos a que la entidad 'content' se quede visible unos ms más
+          // para que la animación de Fade Out se complete antes de desaparecer del todo.
+          setTimeout(() => {
+            if (!isFound) { // Si no se ha vuelto a encontrar el marcador en ese tiempo
+               // Podríamos ocultar la entidad aquí, pero el fade out ya lo hace invisible.
+            }
+          }, 800); // Mismo tiempo que dura la animación
+        });
+
+        // --- SCRIPT DE SUAVIZADO ELÁSTICO (CERO TEMBLEQUE) ---
         content.addEventListener('componentchanged', function (evt) {
           if (!isFound) return;
           if (evt.detail.name !== 'position' && evt.detail.name !== 'rotation') return;
