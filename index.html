@@ -1,45 +1,70 @@
 <html>
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/MauroCasarin/Guille-y-Mary/refs/heads/main/favicon.ico">
+    
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
       body { margin: 0; overflow: hidden; }
-      /* Eliminación definitiva de botones VR por CSS */
+      
+      /* Ocultar botones de VR/AR de A-Frame */
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
+
+      /* --- ESTILO DEL MARCO FIJO --- */
+      #marco-app {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Reemplaza la ruta si tu canvas.png está en otra carpeta */
+        background-image: url('assets/canvas.png'); 
+        
+        /* Ajuste para que se vea bien en cualquier pantalla */
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover; /* Cubre toda la pantalla sin deformar */
+        
+        /* Asegura que esté por ENCIMA de la cámara (z-index alto) */
+        z-index: 10; 
+        
+        /* Importante: permite que los toques pasen a través del marco */
+        pointer-events: none; 
+      }
     </style>
   </head>
   <body>
-    
+
+    <div id="marco-app"></div>
+
     <a-scene 
       mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.1; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
-      device-orientation-permission-ui="enabled: false">
+      device-orientation-permission-ui="enabled: false"
+      style="z-index: 1;">
       
       <a-assets>
         <img id="img1" src="assets/imagen1.png">
         <img id="img2" src="assets/imagen2.png">
         <img id="img3" src="assets/imagen3.png">
         <img id="img4" src="assets/imagen4.png">
-        <img id="glow-tex" src="https://raw.githubusercontent.com/takahirox/aframe-outline/master/examples/assets/images/glow.png">
       </a-assets>
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
+      <a-mixin id="glowStyle"
+               geometry="primitive: circle; radius: 0.6"
+               material="shader: flat; color: #FFD700; transparent: true; opacity: 0.5; blending: additive"
+               animation__pulse="property: geometry.radius; from: 0.55; to: 0.7; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"></a-mixin>
+
       <a-mixin id="mainImageStyle" 
                material="transparent: true; alphaTest: 0.5; shader: flat"
-               animation__scale="property: scale; from: 0 0 0; to: 1 1 1; dur: 800; easing: easeOutElastic"
-               animation__float="property: position; to: 0 0 0.18; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
-
-      <a-mixin id="glowStyle"
-               geometry="primitive: plane; width: 1.4; height: 1.4"
-               material="src: #glow-tex; transparent: true; color: #FFF; opacity: 0.6; shader: flat"
-               animation__pulse="property: material.opacity; from: 0.2; to: 0.7; dur: 1500; easing: easeInOutQuad; loop: true; dir: alternate"
-               animation__rotate="property: rotation; to: 0 0 360; dur: 10000; easing: linear; loop: true"></a-mixin>
+               animation__pop="property: scale; from: 0 0 0; to: 1 1 1; dur: 600; easing: easeOutBack"
+               animation__float="property: position; to: 0 0 0.15; dur: 2000; easing: easeInOutSine; loop: true; dir: alternate"></a-mixin>
 
       <a-entity mindar-image-target="targetIndex: 0">
          <a-entity mixin="glowStyle" position="0 0 0.05"></a-entity>
@@ -53,21 +78,14 @@
 
       <a-entity mindar-image-target="targetIndex: 2">
          <a-entity mixin="glowStyle" position="0 0 0.05"></a-entity>
-         <a-image src="#img3" position="0 0 0.1" width="1" height="1" mixin="mainImageStyle"></a-image>
+         <a-image src="#img3" position="0 0.5 0.1" width="1" height="1" mixin="mainImageStyle"></a-image>
       </a-entity>
 
       <a-entity mindar-image-target="targetIndex: 3">
          <a-entity mixin="glowStyle" position="0 0 0.05"></a-entity>
-         <a-image src="#img4" position="0 0 0.1" width="1" height="1" mixin="mainImageStyle"></a-image>
+         <a-image src="#img4" position="0 0.5 0.1" width="1" height="1" mixin="mainImageStyle"></a-image>
       </a-entity>
 
     </a-scene>
-
-    <script>
-      // Asegurar que VR esté apagado y manejar la cámara
-      document.querySelector('a-scene').addEventListener('loaded', function () {
-        this.setAttribute('vr-mode-ui', 'enabled', false);
-      });
-    </script>
   </body>
 </html>
