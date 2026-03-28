@@ -10,7 +10,7 @@
       body { margin: 0; overflow: hidden; background-color: #000; }
       .a-enter-vr, .a-enter-ar, .a-orientation-modal { display: none !important; }
 
-      /* AJUSTE ESTRICTO AL ALTO DE PANTALLA */
+      /* MARCO CON AUTO-ESCALADO FORZADO (STRETCH) */
       #marco-app {
         position: fixed;
         top: 0; left: 0; 
@@ -19,8 +19,8 @@
         background-image: url('assets/canvas.png'); 
         background-position: center center; 
         background-repeat: no-repeat; 
-        /* 'contain' obliga a que la imagen se escale hasta tocar el borde superior e inferior */
-        background-size: contain; 
+        /* '100% 100%' obliga a la imagen a estirarse para cubrir ancho y alto exactos */
+        background-size: 100% 100%; 
         z-index: 10; 
         pointer-events: none; 
       }
@@ -41,23 +41,23 @@
     <button id="btn-fullscreen">⛶</button>
 
     <script>
-      // Componente de chispas reactivas al movimiento del celular
+      // Componente de chispas sutiles (se mantiene para dar vida a la RA)
       AFRAME.registerComponent('accelerometer-sparks', {
         init: function () {
           this.handleOrientation = this.handleOrientation.bind(this);
           window.addEventListener('deviceorientation', this.handleOrientation, true);
         },
         handleOrientation: function (event) {
-          const maxTilt = 15; 
-          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 5));
-          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 5));
+          const maxTilt = 12; 
+          const tiltX = Math.max(-maxTilt, Math.min(maxTilt, event.beta / 6));
+          const tiltY = Math.max(-maxTilt, Math.min(maxTilt, event.gamma / 6));
           this.el.setAttribute('rotation', { x: -tiltX, y: tiltY, z: 0 });
         }
       });
     </script>
 
     <a-scene 
-      mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; uiScanning: no; uiLoading: no;" 
+      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no;" 
       color-space="sRGB" 
       renderer="colorManagement: true, physicallyCorrectLights" 
       vr-mode-ui="enabled: false" 
@@ -89,7 +89,6 @@
            <a-entity accelerometer-sparks>
              <a-entity mixin="spark" position="0.4 0.4 0"></a-entity>
              <a-entity mixin="spark" position="-0.4 -0.4 0.1"></a-entity>
-             <a-entity mixin="spark" position="0.2 -0.5 -0.1"></a-entity>
            </a-entity>
          </a-entity>
       </a-entity>
@@ -139,7 +138,7 @@
         }
       });
 
-      // Suavizado elástico (Lerp) para el contenido RA
+      // Suavizado elástico (Lerp) para evitar temblores
       const smoothingFactor = 0.05; 
       for (let i = 0; i < 4; i++) {
         const target = document.querySelector(`#target${i}`);
